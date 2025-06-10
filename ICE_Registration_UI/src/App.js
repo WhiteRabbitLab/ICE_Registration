@@ -1,89 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Music, User } from 'lucide-react';
 
-// Mock data
-const mockArtists = [
-  {
-    id: 1,
-    name: "Luna Rivers",
-    photo: "https://images.unsplash.com/photo-1494790108755-2616c96a0d01?w=150&h=150&fit=crop&crop=face",
-    trackCount: 24,
-    description: "Indie folk singer-songwriter known for ethereal vocals and introspective lyrics that capture the essence of modern wanderlust."
-  },
-  {
-    id: 2,
-    name: "The Midnight Collective",
-    photo: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=150&h=150&fit=crop&crop=face",
-    trackCount: 18,
-    description: "Electronic music duo blending ambient soundscapes with driving beats, creating immersive sonic journeys."
-  },
-  {
-    id: 3,
-    name: "Marcus Stone",
-    photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    trackCount: 32,
-    description: "Jazz fusion guitarist whose innovative approach bridges traditional jazz with contemporary rock influences."
-  },
-  {
-    id: 4,
-    name: "Aria Chen",
-    photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-    trackCount: 15,
-    description: "Classical crossover violinist bringing orchestral elegance to modern pop arrangements."
+// API configuration
+const API_BASE_URL = 'http://localhost:8080/api';
+
+// API functions
+const fetchArtists = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/artists`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching artists:', error);
+    throw error;
   }
-];
-
-const mockTracks = {
-  1: [
-    { id: 1, name: "Whispers in the Wind", genre: "Indie Folk", length: "3:24" },
-    { id: 2, name: "Mountain Dreams", genre: "Folk", length: "4:12" },
-    { id: 3, name: "City Lights", genre: "Indie Pop", length: "3:45" },
-    { id: 4, name: "Solitary Road", genre: "Indie Folk", length: "4:33" }
-  ],
-  2: [
-    { id: 5, name: "Neon Nights", genre: "Electronic", length: "5:18" },
-    { id: 6, name: "Digital Dreams", genre: "Ambient", length: "6:42" },
-    { id: 7, name: "Pulse", genre: "Techno", length: "4:56" },
-    { id: 8, name: "Synthetic Dawn", genre: "Electronic", length: "5:23" }
-  ],
-  3: [
-    { id: 9, name: "Blue Note Variations", genre: "Jazz Fusion", length: "7:15" },
-    { id: 10, name: "Electric Groove", genre: "Jazz Rock", length: "5:44" },
-    { id: 11, name: "Midnight Serenade", genre: "Jazz", length: "6:28" },
-    { id: 12, name: "Fusion Flow", genre: "Jazz Fusion", length: "5:52" }
-  ],
-  4: [
-    { id: 13, name: "Classical Crossroads", genre: "Classical Pop", length: "4:18" },
-    { id: 14, name: "String Symphony", genre: "Classical", length: "3:56" },
-    { id: 15, name: "Modern Minuet", genre: "Classical Pop", length: "3:32" },
-    { id: 16, name: "Violin Variations", genre: "Classical", length: "4:45" }
-  ]
 };
 
-// Mock API functions
-const fetchArtists = () => {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockArtists), 500);
-  });
-};
-
-const fetchArtistTracks = (artistId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockTracks[artistId] || []), 500);
-  });
+const fetchArtistById = async (artistId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/artists/${artistId}`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Artist not found');
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching artist:', error);
+    throw error;
+  }
 };
 
 // Artist Selection Page Component
 const ArtistSelectionPage = ({ onArtistSelect }) => {
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadArtists = async () => {
-      setLoading(true);
-      const artistData = await fetchArtists();
-      setArtists(artistData);
-      setLoading(false);
+      try {
+        setLoading(true);
+        setError(null);
+        const artistData = await fetchArtists();
+        setArtists(artistData);
+      } catch (err) {
+        setError('Failed to load artists. Please try again later.');
+        console.error('Error loading artists:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     loadArtists();
   }, []);
@@ -92,6 +63,23 @@ const ArtistSelectionPage = ({ onArtistSelect }) => {
     return (
         <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#0d0d0d' }}>
           <div className="text-lg" style={{ color: '#fdfdfd' }}>Loading artists...</div>
+        </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#0d0d0d' }}>
+          <div className="text-center">
+            <div className="text-lg mb-4" style={{ color: '#a3022d' }}>{error}</div>
+            <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded text-white"
+                style={{ backgroundColor: '#17a6b1' }}
+            >
+              Retry
+            </button>
+          </div>
         </div>
     );
   }
@@ -112,68 +100,102 @@ const ArtistSelectionPage = ({ onArtistSelect }) => {
           <h1 className="text-3xl font-bold mb-2" style={{ color: '#fdfdfd' }}>Artists</h1>
         </div>
 
-        <div className="rounded-lg shadow-md overflow-hidden" style={{ backgroundColor: '#fdfdfd' }}>
-          <table className="w-full">
-            <thead style={{ backgroundColor: '#17a6b1' }}>
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Artist</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Tracks</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Description</th>
-            </tr>
-            </thead>
-            <tbody className="divide-y" style={{ backgroundColor: '#fdfdfd', borderColor: '#17a6b1' }}>
-            {artists.map((artist) => (
-                <tr
-                    key={artist.id}
-                    onClick={() => onArtistSelect(artist)}
-                    className="cursor-pointer transition-colors hover:opacity-90"
-                    style={{ backgroundColor: '#fdfdfd' }}
-                    onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#17a6b1'}
-                    onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = '#fdfdfd'}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <img
-                          className="h-12 w-12 rounded-full object-cover"
-                          src={artist.photo}
-                          alt={artist.name}
-                      />
-                      <div className="ml-4">
-                        <div className="text-sm font-medium" style={{ color: '#0d0d0d' }}>{artist.name}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-sm" style={{ color: '#00699e' }}>
-                      <Music className="h-4 w-4 mr-1" />
-                      {artist.trackCount} tracks
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm max-w-md" style={{ color: '#0d0d0d' }}>{artist.description}</div>
-                  </td>
+        {artists.length === 0 ? (
+            <div className="text-center py-8" style={{ color: '#fdfdfd' }}>
+              No artists found.
+            </div>
+        ) : (
+            <div className="rounded-lg shadow-md overflow-hidden" style={{ backgroundColor: '#fdfdfd' }}>
+              <table className="w-full">
+                <thead style={{ backgroundColor: '#17a6b1' }}>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Artist</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Track Count</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Description</th>
                 </tr>
-            ))}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody className="divide-y" style={{ backgroundColor: '#fdfdfd', borderColor: '#17a6b1' }}>
+                {artists.map((artist) => (
+                    <tr
+                        key={artist.id}
+                        onClick={() => onArtistSelect(artist)}
+                        className="cursor-pointer transition-colors hover:opacity-90"
+                        style={{ backgroundColor: '#fdfdfd' }}
+                        onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#17a6b1'}
+                        onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = '#fdfdfd'}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {artist.photo ? (
+                              <img
+                                  className="h-12 w-12 rounded-full object-cover"
+                                  src={artist.photo}
+                                  alt={artist.name}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'flex';
+                                  }}
+                              />
+                          ) : null}
+                          <div
+                              className="h-12 w-12 rounded-full flex items-center justify-center mr-4"
+                              style={{
+                                backgroundColor: '#17a6b1',
+                                display: artist.photo ? 'none' : 'flex'
+                              }}
+                          >
+                            <User className="h-6 w-6" style={{ color: '#fdfdfd' }} />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium" style={{ color: '#0d0d0d' }}>{artist.name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm" style={{ color: '#00699e' }}>
+                          <Music className="h-4 w-4 mr-1" />
+                          {artist.trackCount || 0} tracks
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm max-w-md" style={{ color: '#0d0d0d' }}>
+                          {artist.description || 'No description available'}
+                        </div>
+                      </td>
+                    </tr>
+                ))}
+                </tbody>
+              </table>
+            </div>
+        )}
       </div>
   );
 };
 
 // Artist View Page Component
 const ArtistViewPage = ({ artist, onBack }) => {
-  const [tracks, setTracks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [artistDetails, setArtistDetails] = useState(artist);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const loadTracks = async () => {
-      setLoading(true);
-      const trackData = await fetchArtistTracks(artist.id);
-      setTracks(trackData);
-      setLoading(false);
+    const loadArtistDetails = async () => {
+      if (!artist.id) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+        const detailData = await fetchArtistById(artist.id);
+        setArtistDetails(detailData);
+      } catch (err) {
+        setError('Failed to load artist details.');
+        console.error('Error loading artist details:', err);
+      } finally {
+        setLoading(false);
+      }
     };
-    loadTracks();
+
+    loadArtistDetails();
   }, [artist.id]);
 
   return (
@@ -191,66 +213,81 @@ const ArtistViewPage = ({ artist, onBack }) => {
         {/* Artist Banner */}
         <div className="rounded-lg p-8 mb-8 text-white" style={{ background: 'linear-gradient(to right, #17a6b1, #00699e)' }}>
           <div className="flex items-center">
-            <img
-                className="h-24 w-24 rounded-full object-cover border-4 border-white"
-                src={artist.photo}
-                alt={artist.name}
-            />
+            {artistDetails.photo ? (
+                <img
+                    className="h-24 w-24 rounded-full object-cover border-4 border-white"
+                    src={artistDetails.photo}
+                    alt={artistDetails.name}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                />
+            ) : null}
+            <div
+                className="h-24 w-24 rounded-full border-4 border-white flex items-center justify-center mr-6"
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  display: artistDetails.photo ? 'none' : 'flex'
+                }}
+            >
+              <User className="h-12 w-12 text-white" />
+            </div>
             <div className="ml-6">
-              <h1 className="text-4xl font-bold mb-2">{artist.name}</h1>
+              <h1 className="text-4xl font-bold mb-2">{artistDetails.name}</h1>
               <div className="flex items-center text-blue-100 mb-3">
                 <Music className="h-5 w-5 mr-2" />
-                {artist.trackCount} tracks
+                {artistDetails.trackCount || 0} tracks
               </div>
-              <p className="text-blue-100 max-w-2xl">{artist.description}</p>
+              <p className="text-blue-100 max-w-2xl">
+                {artistDetails.description || 'No description available'}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Tracks Section */}
+        {/* Artist Details Section */}
         <div className="rounded-lg shadow-md overflow-hidden" style={{ backgroundColor: '#fdfdfd' }}>
           <div className="px-6 py-4 border-b" style={{ backgroundColor: '#17a6b1', borderColor: '#00699e' }}>
-            <h2 className="text-xl font-semibold" style={{ color: '#fdfdfd' }}>Tracks</h2>
+            <h2 className="text-xl font-semibold" style={{ color: '#fdfdfd' }}>Artist Information</h2>
           </div>
 
           {loading ? (
               <div className="px-6 py-8 text-center" style={{ color: '#0d0d0d' }}>
-                Loading tracks...
+                Loading artist details...
               </div>
-          ) : tracks.length === 0 ? (
-              <div className="px-6 py-8 text-center" style={{ color: '#0d0d0d' }}>
-                No tracks available for this artist.
+          ) : error ? (
+              <div className="px-6 py-8 text-center" style={{ color: '#a3022d' }}>
+                {error}
               </div>
           ) : (
-              <table className="w-full">
-                <thead style={{ backgroundColor: '#17a6b1' }}>
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Track Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Genre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Length</th>
-                </tr>
-                </thead>
-                <tbody className="divide-y" style={{ backgroundColor: '#fdfdfd', borderColor: '#17a6b1' }}>
-                {tracks.map((track) => (
-                    <tr key={track.id} className="hover:opacity-90"
-                        onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#17a6b1'}
-                        onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = '#fdfdfd'}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium" style={{ color: '#0d0d0d' }}>{track.name}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                          style={{ backgroundColor: '#a3022d', color: '#fdfdfd' }}>
-                      {track.genre}
-                    </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#00699e' }}>
-                        {track.length}
-                      </td>
-                    </tr>
-                ))}
-                </tbody>
-              </table>
+              <div className="px-6 py-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#0d0d0d' }}>Details</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span style={{ color: '#00699e' }}>Artist ID:</span>
+                        <span style={{ color: '#0d0d0d' }}>{artistDetails.id}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span style={{ color: '#00699e' }}>Name:</span>
+                        <span style={{ color: '#0d0d0d' }}>{artistDetails.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span style={{ color: '#00699e' }}>Track Count:</span>
+                        <span style={{ color: '#0d0d0d' }}>{artistDetails.trackCount || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#0d0d0d' }}>Description</h3>
+                    <p style={{ color: '#0d0d0d' }}>
+                      {artistDetails.description || 'No description available for this artist.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
           )}
         </div>
       </div>

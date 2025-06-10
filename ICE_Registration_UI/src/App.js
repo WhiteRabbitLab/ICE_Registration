@@ -36,6 +36,20 @@ const fetchArtistById = async (artistId) => {
   }
 };
 
+const fetchArtistTracks = async (artistId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/artists/${artistId}/tracks`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching tracks:', error);
+    throw error;
+  }
+};
+
 // Artist Selection Page Component
 const ArtistSelectionPage = ({ onArtistSelect }) => {
   const [artists, setArtists] = useState([]);
@@ -110,7 +124,7 @@ const ArtistSelectionPage = ({ onArtistSelect }) => {
                 <thead style={{ backgroundColor: '#17a6b1' }}>
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Artist</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Track Count</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Tracks</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Description</th>
                 </tr>
                 </thead>
@@ -174,28 +188,26 @@ const ArtistSelectionPage = ({ onArtistSelect }) => {
 
 // Artist View Page Component
 const ArtistViewPage = ({ artist, onBack }) => {
-  const [artistDetails, setArtistDetails] = useState(artist);
-  const [loading, setLoading] = useState(false);
+  const [tracks, setTracks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const loadArtistDetails = async () => {
-      if (!artist.id) return;
-
+    const loadTracks = async () => {
       try {
         setLoading(true);
         setError(null);
-        const detailData = await fetchArtistById(artist.id);
-        setArtistDetails(detailData);
+        const trackData = await fetchArtistTracks(artist.id);
+        setTracks(trackData);
       } catch (err) {
-        setError('Failed to load artist details.');
-        console.error('Error loading artist details:', err);
+        setError('Failed to load tracks.');
+        console.error('Error loading tracks:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadArtistDetails();
+    loadTracks();
   }, [artist.id]);
 
   return (
@@ -213,11 +225,11 @@ const ArtistViewPage = ({ artist, onBack }) => {
         {/* Artist Banner */}
         <div className="rounded-lg p-8 mb-8 text-white" style={{ background: 'linear-gradient(to right, #17a6b1, #00699e)' }}>
           <div className="flex items-center">
-            {artistDetails.photo ? (
+            {artist.photo ? (
                 <img
                     className="h-24 w-24 rounded-full object-cover border-4 border-white"
-                    src={artistDetails.photo}
-                    alt={artistDetails.name}
+                    src={artist.photo}
+                    alt={artist.name}
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.nextSibling.style.display = 'flex';
@@ -228,66 +240,72 @@ const ArtistViewPage = ({ artist, onBack }) => {
                 className="h-24 w-24 rounded-full border-4 border-white flex items-center justify-center mr-6"
                 style={{
                   backgroundColor: 'rgba(255,255,255,0.2)',
-                  display: artistDetails.photo ? 'none' : 'flex'
+                  display: artist.photo ? 'none' : 'flex'
                 }}
             >
               <User className="h-12 w-12 text-white" />
             </div>
             <div className="ml-6">
-              <h1 className="text-4xl font-bold mb-2">{artistDetails.name}</h1>
+              <h1 className="text-4xl font-bold mb-2">{artist.name}</h1>
               <div className="flex items-center text-blue-100 mb-3">
                 <Music className="h-5 w-5 mr-2" />
-                {artistDetails.trackCount || 0} tracks
+                {artist.trackCount || 0} tracks
               </div>
               <p className="text-blue-100 max-w-2xl">
-                {artistDetails.description || 'No description available'}
+                {artist.description || 'No description available'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Artist Details Section */}
+        {/* Tracks Section */}
         <div className="rounded-lg shadow-md overflow-hidden" style={{ backgroundColor: '#fdfdfd' }}>
           <div className="px-6 py-4 border-b" style={{ backgroundColor: '#17a6b1', borderColor: '#00699e' }}>
-            <h2 className="text-xl font-semibold" style={{ color: '#fdfdfd' }}>Artist Information</h2>
+            <h2 className="text-xl font-semibold" style={{ color: '#fdfdfd' }}>Tracks</h2>
           </div>
 
           {loading ? (
               <div className="px-6 py-8 text-center" style={{ color: '#0d0d0d' }}>
-                Loading artist details...
+                Loading tracks...
               </div>
           ) : error ? (
               <div className="px-6 py-8 text-center" style={{ color: '#a3022d' }}>
                 {error}
               </div>
-          ) : (
-              <div className="px-6 py-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#0d0d0d' }}>Details</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span style={{ color: '#00699e' }}>Artist ID:</span>
-                        <span style={{ color: '#0d0d0d' }}>{artistDetails.id}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span style={{ color: '#00699e' }}>Name:</span>
-                        <span style={{ color: '#0d0d0d' }}>{artistDetails.name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span style={{ color: '#00699e' }}>Track Count:</span>
-                        <span style={{ color: '#0d0d0d' }}>{artistDetails.trackCount || 0}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#0d0d0d' }}>Description</h3>
-                    <p style={{ color: '#0d0d0d' }}>
-                      {artistDetails.description || 'No description available for this artist.'}
-                    </p>
-                  </div>
-                </div>
+          ) : tracks.length === 0 ? (
+              <div className="px-6 py-8 text-center" style={{ color: '#0d0d0d' }}>
+                No tracks available for this artist.
               </div>
+          ) : (
+              <table className="w-full">
+                <thead style={{ backgroundColor: '#17a6b1' }}>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Track Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Genre</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#fdfdfd' }}>Length</th>
+                </tr>
+                </thead>
+                <tbody className="divide-y" style={{ backgroundColor: '#fdfdfd', borderColor: '#17a6b1' }}>
+                {tracks.map((track) => (
+                    <tr key={track.id} className="hover:opacity-90"
+                        onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#17a6b1'}
+                        onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = '#fdfdfd'}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium" style={{ color: '#0d0d0d' }}>{track.title}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          style={{ backgroundColor: '#a3022d', color: '#fdfdfd' }}>
+                      {track.genre}
+                    </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#00699e' }}>
+                        {track.formattedLength}
+                      </td>
+                    </tr>
+                ))}
+                </tbody>
+              </table>
           )}
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Music, User } from 'lucide-react';
+import { ChevronLeft, Music, User, Edit2, Check, X } from 'lucide-react';
 
 // API configuration
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -15,6 +15,26 @@ const fetchArtists = async () => {
     return data;
   } catch (error) {
     console.error('Error fetching artists:', error);
+    throw error;
+  }
+};
+
+const updateArtist = async (artistId, artistData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/artists/${artistId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(artistData),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating artist:', error);
     throw error;
   }
 };
@@ -187,10 +207,14 @@ const ArtistSelectionPage = ({ onArtistSelect }) => {
 };
 
 // Artist View Page Component
-const ArtistViewPage = ({ artist, onBack }) => {
+const ArtistViewPage = ({ artist, onBack, onArtistUpdate }) => {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(artist.name);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   useEffect(() => {
     const loadTracks = async () => {
@@ -209,6 +233,32 @@ const ArtistViewPage = ({ artist, onBack }) => {
 
     loadTracks();
   }, [artist.id]);
+
+  const handleSave = async () => {
+    if (!editedName.trim()) {
+      setSaveError('Artist name cannot be empty');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setSaveError(null);
+      const updatedArtist = await updateArtist(artist.id, { name: editedName.trim() });
+      onArtistUpdate(updatedArtist);
+      setIsEditing(false);
+    } catch (err) {
+      setSaveError('Failed to save changes');
+      console.error('Error saving artist:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedName(artist.name);
+    setIsEditing(false);
+    setSaveError(null);
+  };
 
   return (
       <div className="max-w-6xl mx-auto p-6">
@@ -245,8 +295,48 @@ const ArtistViewPage = ({ artist, onBack }) => {
             >
               <User className="h-12 w-12 text-white" />
             </div>
-            <div className="ml-6">
-              <h1 className="text-4xl font-bold mb-2">{artist.name}</h1>
+            <div className="ml-6 flex-1">
+              <div className="flex items-center mb-2">
+                {isEditing ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input
+                          type="text"
+                          value={editedName}
+                          onChange={(e) => setEditedName(e.target.value)}
+                          className="text-4xl font-bold bg-white bg-opacity-20 text-white px-3 py-1 rounded border-2 border-white border-opacity-50 focus:border-opacity-100 focus:outline-none"
+                          style={{ minWidth: '300px' }}
+                          autoFocus
+                      />
+                      <button
+                          onClick={handleSave}
+                          disabled={saving}
+                          className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors disabled:opacity-50"
+                      >
+                        <Check className="h-5 w-5 text-white" />
+                      </button>
+                      <button
+                          onClick={handleCancel}
+                          disabled={saving}
+                          className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors disabled:opacity-50"
+                      >
+                        <X className="h-5 w-5 text-white" />
+                      </button>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-4xl font-bold">{artist.name}</h1>
+                      <button
+                          onClick={() => setIsEditing(true)}
+                          className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors"
+                      >
+                        <Edit2 className="h-5 w-5 text-white" />
+                      </button>
+                    </div>
+                )}
+              </div>
+              {saveError && (
+                  <div className="text-red-200 text-sm mb-2">{saveError}</div>
+              )}
               <div className="flex items-center text-blue-100 mb-3">
                 <Music className="h-5 w-5 mr-2" />
                 {artist.trackCount || 0} tracks
@@ -327,12 +417,20 @@ const App = () => {
     setSelectedArtist(null);
   };
 
+  const handleArtistUpdate = (updatedArtist) => {
+    setSelectedArtist(updatedArtist);
+  };
+
   return (
       <div className="min-h-screen" style={{ backgroundColor: '#0d0d0d' }}>
         {currentView === 'artists' ? (
             <ArtistSelectionPage onArtistSelect={handleArtistSelect} />
         ) : (
-            <ArtistViewPage artist={selectedArtist} onBack={handleBackToArtists} />
+            <ArtistViewPage
+                artist={selectedArtist}
+                onBack={handleBackToArtists}
+                onArtistUpdate={handleArtistUpdate}
+            />
         )}
       </div>
   );

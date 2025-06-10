@@ -50,4 +50,18 @@ public class ArtistController {
         return ResponseEntity.ok(tracks);
     }
 
+    /**
+     * PUT /api/artists/{id} - Update artist
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<ArtistDto> updateArtist(@PathVariable Integer id, @RequestBody ArtistDto artistDto) {
+        try {
+            Optional<ArtistDto> updatedArtist = artistService.updateArtist(id, artistDto);
+            return updatedArtist.map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
 }

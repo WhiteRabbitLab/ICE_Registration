@@ -7,8 +7,10 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,7 +50,27 @@ public class ArtistService {
                     return convertToDto(savedArtist);
                 });
     }
-    
+
+    public ArtistDto getFeaturedArtist() {
+        LocalDate today = LocalDate.now();
+
+        // Get all artists
+        List<Artist> allArtists = artistRepository.findAll();
+
+        if (allArtists.isEmpty()) {
+            throw new RuntimeException("No artists available");
+        }
+
+        // Use date as seed for consistent daily rotation
+        long seed = today.toEpochDay();
+        Random random = new Random(seed);
+
+        // Select random artist based on today's seed
+        int index = random.nextInt(allArtists.size());
+        Artist featuredArtist = allArtists.get(index);
+
+        return convertToDto(featuredArtist);
+    }
 
     private ArtistDto convertToDto(Artist artist) {
         return new ArtistDto(

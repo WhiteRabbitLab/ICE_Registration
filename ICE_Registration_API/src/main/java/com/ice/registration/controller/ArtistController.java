@@ -22,6 +22,17 @@ public class ArtistController {
     @Autowired
     private TrackService trackService;
 
+
+    // Add this to your ArtistController
+    /**
+     * GET /api/artists/featured - Get featured artist (Artist of the day)
+     */
+    @GetMapping("/featured")
+    public ResponseEntity<ArtistDto> getFeaturedArtist() {
+        ArtistDto featuredArtist = artistService.getFeaturedArtist();
+        return ResponseEntity.ok(featuredArtist);
+    }
+
     /**
      * GET /api/artists - Get all artists
      */

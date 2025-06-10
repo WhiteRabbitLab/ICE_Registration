@@ -35,7 +35,7 @@ public class TrackService {
     }
 
     public TrackDto createTrack(TrackDto trackDto) {
-        // Validate required fields
+
         if (trackDto.getTitle() == null || trackDto.getTitle().trim().isEmpty()) {
             throw new RuntimeException("Track title is required");
         }
@@ -46,30 +46,35 @@ public class TrackService {
             throw new RuntimeException("At least one artist is required");
         }
 
-        // Create new track
         Track track = new Track();
         track.setTitle(trackDto.getTitle().trim());
         track.setLengthSeconds(trackDto.getLengthSeconds());
 
-        // Set genre
         Genre genre = genreRepository.findById(trackDto.getGenreId())
                 .orElseThrow(() -> new RuntimeException("Genre not found"));
         track.setGenre(genre);
 
-        // Set artists
+        Track savedTrack = trackRepository.save(track);
+
         Set<Artist> artists = new HashSet<>();
         for (Integer artistId : trackDto.getArtistIds()) {
             Artist artist = artistRepository.findById(artistId)
                     .orElseThrow(() -> new RuntimeException("Artist not found: " + artistId));
             artists.add(artist);
-        }
-        track.setArtists(artists);
 
-        // Save track
-        Track savedTrack = trackRepository.save(track);
+            if (artist.getTracks() == null) {
+                artist.setTracks(new HashSet<>());
+            }
+            artist.getTracks().add(savedTrack);
+        }
+
+        savedTrack.setArtists(artists);
+
+        artistRepository.saveAll(artists);
+        savedTrack = trackRepository.save(savedTrack);
 
         return convertToDto(savedTrack);
-        }
+    }
     
     private TrackDto convertToDto(Track track) {
         String genreDescription = track.getGenre() != null ? track.getGenre().getDescription() : "Unknown";

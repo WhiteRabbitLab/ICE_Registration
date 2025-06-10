@@ -4,9 +4,9 @@ INSERT INTO genre (description) VALUES
                                     ('Metal');
 
 INSERT INTO artist (name, picture, description) VALUES
-                                                    ('Generic Indie Landfill Band', 'https://example.com/indie.jpg', 'Moody vocals, jangly guitars, and vintage filters.'),
-                                                    ('AutoTuna', 'https://example.com/country.jpg', 'Country-pop fusion with heavy vocal effects.'),
-                                                    ('Mild Rage', 'https://example.com/metal.jpg', 'Melodic metal with a hint of existential dread.');
+                                                    ('Generic Indie Landfill Band', 'https://singersroom.com/wp-content/uploads/2024/02/15-Best-Indie-Bands-of-All-Time.jpg', 'Moody vocals, jangly guitars, and vintage filters.'),
+                                                    ('AutoTuna', 'https://hips.hearstapps.com/hmg-prod/images/best-female-country-singers-mickey-guyton-1652413741.jpg', 'Country-pop fusion with heavy vocal effects.'),
+                                                    ('Mild Rage', 'https://www.season-of-mist.com/wp-content/uploads/2020/03/AndOceans_3_FULL_ARTISTIC-300x300.jpg', 'Melodic metal with a hint of existential dread.');
 
 INSERT INTO track (title, genre_id, length_seconds) VALUES
                                                         ('Coffee and Rain', (SELECT id FROM genre WHERE description = 'Indie Rock'), 214),
@@ -24,7 +24,7 @@ INSERT INTO track (title, genre_id, length_seconds) VALUES
 INSERT INTO artist_track (artist_id, track_id)
 SELECT a.id, t.id
 FROM artist a, track t
-WHERE a.name = 'Generic Indie Landfill' AND t.title IN ('Coffee and Rain', 'Vinyl Heart');
+WHERE a.name = 'Generic Indie Landfill Band' AND t.title IN ('Coffee and Rain', 'Vinyl Heart');
 
 INSERT INTO artist_track (artist_id, track_id)
 SELECT a.id, t.id

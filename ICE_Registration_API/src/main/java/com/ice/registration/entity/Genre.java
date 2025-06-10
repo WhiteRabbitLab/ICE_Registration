@@ -1,34 +1,49 @@
 package com.ice.registration.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.Set;
-import java.util.HashSet;
 
 @Entity
 @Table(name = "genre")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Genre {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
     
-    @Column(name = "description", nullable = false, unique = true, length = 100)
-    @NotBlank(message = "Genre description is required")
-    @Size(max = 100, message = "Genre description must not exceed 100 characters")
+    @Column(nullable = false, unique = true, length = 100)
     private String description;
     
-    @OneToMany(mappedBy = "genre", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<Track> tracks = new HashSet<>();
-
+    @OneToMany(mappedBy = "genre")
+    private Set<Track> tracks;
+    
+    public Genre() {}
+    
+    public Genre(String description) {
+        this.description = description;
+    }
+    
+    public Integer getId() {
+        return id;
+    }
+    
+    public void setId(Integer id) {
+        this.id = id;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public Set<Track> getTracks() {
+        return tracks;
+    }
+    
+    public void setTracks(Set<Track> tracks) {
+        this.tracks = tracks;
+    }
 }

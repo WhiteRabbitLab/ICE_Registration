@@ -1,46 +1,82 @@
 package com.ice.registration.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.Positive;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
 import java.util.Set;
-import java.util.HashSet;
 
 @Entity
 @Table(name = "track")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Track {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(name = "title", nullable = false)
-    @NotBlank(message = "Track title is required")
-    @Size(max = 255, message = "Track title must not exceed 255 characters")
+    private Integer id;
+
+    @Column(nullable = false)
     private String title;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "genre_id")
     private Genre genre;
     
     @Column(name = "length_seconds")
-    @Positive(message = "Track length must be positive")
     private Integer lengthSeconds;
     
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "artist_track",
-        joinColumns = @JoinColumn(name = "track_id"),
-        inverseJoinColumns = @JoinColumn(name = "artist_id")
-    )
-
-    private Set<Artist> artists = new HashSet<>();
-
+    @ManyToMany(mappedBy = "tracks", fetch = FetchType.LAZY)
+    private Set<Artist> artists;
+    
+    public Track() {}
+    
+    public Track(String title, Genre genre, Integer lengthSeconds) {
+        this.title = title;
+        this.genre = genre;
+        this.lengthSeconds = lengthSeconds;
+    }
+    
+    public Integer getId() {
+        return id;
+    }
+    
+    public void setId(Integer id) {
+        this.id = id;
+    }
+    
+    public String getTitle() {
+        return title;
+    }
+    
+    public void setTitle(String title) {
+        this.title = title;
+    }
+    
+    public Genre getGenre() {
+        return genre;
+    }
+    
+    public void setGenre(Genre genre) {
+        this.genre = genre;
+    }
+    
+    public Integer getLengthSeconds() {
+        return lengthSeconds;
+    }
+    
+    public void setLengthSeconds(Integer lengthSeconds) {
+        this.lengthSeconds = lengthSeconds;
+    }
+    
+    public Set<Artist> getArtists() {
+        return artists;
+    }
+    
+    public void setArtists(Set<Artist> artists) {
+        this.artists = artists;
+    }
+    
+    // Helper method to format length as MM:SS
+    public String getFormattedLength() {
+        if (lengthSeconds == null) return "0:00";
+        int minutes = lengthSeconds / 60;
+        int seconds = lengthSeconds % 60;
+        return String.format("%d:%02d", minutes, seconds);
+    }
 }

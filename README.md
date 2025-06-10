@@ -75,3 +75,8 @@ layer logic to include the new mapping in the DTO response
 
 - A better approach would be to use database tracked rotation
 - This way we are ensuring a fair round-robin cycle of each artist in the database
+
+### For improved testing
+
+- Selenium / Cucumber / Gherkin BDD scenarios for UX.
+- Integration tests using testcontainers for the REST API.

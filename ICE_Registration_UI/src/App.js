@@ -19,23 +19,6 @@ const fetchArtists = async () => {
   }
 };
 
-const fetchArtistById = async (artistId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/artists/${artistId}`);
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('Artist not found');
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching artist:', error);
-    throw error;
-  }
-};
-
 const fetchArtistTracks = async (artistId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/artists/${artistId}/tracks`);
@@ -46,6 +29,20 @@ const fetchArtistTracks = async (artistId) => {
     return data;
   } catch (error) {
     console.error('Error fetching tracks:', error);
+    throw error;
+  }
+};
+
+const fetchFeaturedArtist = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/artists/featured`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching featured artist:', error);
     throw error;
   }
 };
@@ -107,16 +104,21 @@ const createTrack = async (trackData) => {
 // Artist Selection Page Component
 const ArtistSelectionPage = ({ onArtistSelect }) => {
   const [artists, setArtists] = useState([]);
+  const [featuredArtist, setFeaturedArtist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const loadArtists = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const artistData = await fetchArtists();
+        const [artistData, featuredData] = await Promise.all([
+          fetchArtists(),
+          fetchFeaturedArtist()
+        ]);
         setArtists(artistData);
+        setFeaturedArtist(featuredData);
       } catch (err) {
         setError('Failed to load artists. Please try again later.');
         console.error('Error loading artists:', err);
@@ -124,7 +126,7 @@ const ArtistSelectionPage = ({ onArtistSelect }) => {
         setLoading(false);
       }
     };
-    loadArtists();
+    loadData();
   }, []);
 
   if (loading) {
@@ -154,18 +156,65 @@ const ArtistSelectionPage = ({ onArtistSelect }) => {
 
   return (
       <div className="max-w-6xl mx-auto p-6">
-        {/* Hero Image Section */}
-        <div className="mb-6 w-1/2 rounded-lg overflow-hidden shadow-lg">
-          <img
-              src="https://www.iceservices.com/wp-content/themes/ice/assets/img/iceservices-logo.png"
-              alt="ICE Music Services"
-              className="w-full h-32 object-contain"
-          />
+        {/* Hero Section with Logo and Artist of the Day */}
+        <div className="mb-8 flex gap-6">
+          {/* Logo Section */}
+          <div className="w-1/2 rounded-lg overflow-hidden shadow-lg">
+            <img
+                src="https://www.iceservices.com/wp-content/themes/ice/assets/img/iceservices-logo.png"
+                alt="ICE Music Services"
+                className="w-full h-32 object-contain"
+            />
+          </div>
+
+          {/* Artist of the Day Section */}
+          {featuredArtist && (
+              <div className="w-1/2 rounded-lg overflow-hidden shadow-lg" style={{ background: 'linear-gradient(135deg, #17a6b1 0%, #00699e 100%)' }}>
+                <div className="p-6 text-white h-32 flex items-center">
+                  <div className="flex items-center space-x-4 w-full">
+                    {featuredArtist.photo ? (
+                        <img
+                            className="h-16 w-16 rounded-full object-cover border-2 border-white"
+                            src={featuredArtist.photo}
+                            alt={featuredArtist.name}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                        />
+                    ) : null}
+                    <div
+                        className="h-16 w-16 rounded-full border-2 border-white flex items-center justify-center"
+                        style={{
+                          backgroundColor: 'rgba(255,255,255,0.2)',
+                          display: featuredArtist.photo ? 'none' : 'flex'
+                        }}
+                    >
+                      <User className="h-8 w-8 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-blue-100 mb-1">Artist of the Day</div>
+                      <h3 className="text-xl font-bold mb-1">{featuredArtist.name}</h3>
+                      <div className="flex items-center text-blue-100 text-sm">
+                        <Music className="h-4 w-4 mr-1" />
+                        {featuredArtist.trackCount || 0} tracks
+                      </div>
+                    </div>
+                    <button
+                        onClick={() => onArtistSelect(featuredArtist)}
+                        className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md transition-colors text-sm font-medium"
+                    >
+                      View Artist
+                    </button>
+                  </div>
+                </div>
+              </div>
+          )}
         </div>
 
         {/* Title Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: '#fdfdfd' }}>Artists</h1>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: '#fdfdfd' }}>All Artists</h1>
         </div>
 
         {artists.length === 0 ? (

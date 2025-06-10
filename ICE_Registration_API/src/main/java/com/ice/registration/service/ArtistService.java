@@ -52,12 +52,12 @@ public class ArtistService {
     }
 
     public ArtistDto getFeaturedArtist() {
+        // Get current date to ensure same artist for the whole day
         LocalDate today = LocalDate.now();
 
-        // Get all artists
-        List<Artist> allArtists = artistRepository.findAll();
+        List<Integer> artistIds = artistRepository.findAllIds();
 
-        if (allArtists.isEmpty()) {
+        if (artistIds.isEmpty()) {
             throw new RuntimeException("No artists available");
         }
 
@@ -65,9 +65,13 @@ public class ArtistService {
         long seed = today.toEpochDay();
         Random random = new Random(seed);
 
-        // Select random artist based on today's seed
-        int index = random.nextInt(allArtists.size());
-        Artist featuredArtist = allArtists.get(index);
+        // Select random artist ID based on today's seed
+        int index = random.nextInt(artistIds.size());
+        Integer featuredArtistId = artistIds.get(index);
+
+        // Fetch the full artist by ID
+        Artist featuredArtist = artistRepository.findById(featuredArtistId)
+                .orElseThrow(() -> new RuntimeException("Featured artist not found"));
 
         return convertToDto(featuredArtist);
     }

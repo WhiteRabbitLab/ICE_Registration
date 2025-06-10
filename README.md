@@ -70,3 +70,8 @@ Given more time, I would add the following
 layer logic to include the new mapping in the DTO response
 - Include a put controller to add or remove an artist alias
 - Modify the front-end to include a drop-down of some sort where alias can be viewed, and modified
+
+### For the fourth requirement
+
+- A better approach would be to use database tracked rotation
+- This way we are ensuring a fair round-robin cycle of each artist in the database

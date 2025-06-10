@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Music, User, Edit2, Check, X } from 'lucide-react';
+import { ChevronLeft, Music, User, Edit2, Check, X, Plus } from 'lucide-react';
 
 // API configuration
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -15,26 +15,6 @@ const fetchArtists = async () => {
     return data;
   } catch (error) {
     console.error('Error fetching artists:', error);
-    throw error;
-  }
-};
-
-const updateArtist = async (artistId, artistData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/artists/${artistId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(artistData),
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error updating artist:', error);
     throw error;
   }
 };
@@ -66,6 +46,60 @@ const fetchArtistTracks = async (artistId) => {
     return data;
   } catch (error) {
     console.error('Error fetching tracks:', error);
+    throw error;
+  }
+};
+
+const updateArtist = async (artistId, artistData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/artists/${artistId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(artistData),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating artist:', error);
+    throw error;
+  }
+};
+
+const fetchGenres = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/genres`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching genres:', error);
+    throw error;
+  }
+};
+
+const createTrack = async (trackData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tracks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(trackData),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error creating track:', error);
     throw error;
   }
 };
@@ -206,32 +240,211 @@ const ArtistSelectionPage = ({ onArtistSelect }) => {
   );
 };
 
+// Add Track Form Component
+const AddTrackForm = ({ artist, genres, onClose, onTrackAdded }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    genreId: '',
+    lengthSeconds: 0,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.title.trim()) {
+      setError('Track title is required');
+      return;
+    }
+    if (!formData.genreId) {
+      setError('Please select a genre');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      const trackData = {
+        title: formData.title.trim(),
+        genreId: parseInt(formData.genreId),
+        lengthSeconds: formData.lengthSeconds,
+        artistIds: [artist.id]
+      };
+
+      await createTrack(trackData);
+      onTrackAdded();
+      onClose();
+    } catch (err) {
+      setError('Failed to create track');
+      console.error('Error creating track:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTimeChange = (minutes, seconds) => {
+    const totalSeconds = (parseInt(minutes) || 0) * 60 + (parseInt(seconds) || 0);
+    setFormData(prev => ({ ...prev, lengthSeconds: totalSeconds }));
+  };
+
+  const formatTime = (totalSeconds) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return { minutes, seconds };
+  };
+
+  const { minutes, seconds } = formatTime(formData.lengthSeconds);
+
+  return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold" style={{ color: '#0d0d0d' }}>
+              Add New Track for {artist.name}
+            </h3>
+            <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full"
+                disabled={saving}
+            >
+              <X className="h-5 w-5" style={{ color: '#0d0d0d' }} />
+            </button>
+          </div>
+
+          {error && (
+              <div className="mb-4 p-3 rounded text-sm" style={{ backgroundColor: '#fee', color: '#a3022d' }}>
+                {error}
+              </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0d0d0d' }}>
+                Track Title *
+              </label>
+              <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  style={{ borderColor: '#17a6b1', focusRingColor: '#17a6b1' }}
+                  placeholder="Enter track title"
+                  disabled={saving}
+                  autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0d0d0d' }}>
+                Genre *
+              </label>
+              <select
+                  value={formData.genreId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, genreId: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  style={{ borderColor: '#17a6b1' }}
+                  disabled={saving}
+              >
+                <option value="">Select a genre</option>
+                {genres.map((genre) => (
+                    <option key={genre.id} value={genre.id}>
+                      {genre.name}
+                    </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0d0d0d' }}>
+                Length
+              </label>
+              <div className="flex gap-2 items-center">
+                <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={minutes}
+                    onChange={(e) => handleTimeChange(e.target.value, seconds)}
+                    className="w-20 px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                    style={{ borderColor: '#17a6b1' }}
+                    placeholder="0"
+                    disabled={saving}
+                />
+                <span style={{ color: '#0d0d0d' }}>min</span>
+                <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={seconds}
+                    onChange={(e) => handleTimeChange(minutes, e.target.value)}
+                    className="w-20 px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                    style={{ borderColor: '#17a6b1' }}
+                    placeholder="0"
+                    disabled={saving}
+                />
+                <span style={{ color: '#0d0d0d' }}>sec</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-2 px-4 rounded text-white font-medium disabled:opacity-50"
+                  style={{ backgroundColor: '#17a6b1' }}
+              >
+                {saving ? 'Creating...' : 'Create Track'}
+              </button>
+              <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={saving}
+                  className="flex-1 py-2 px-4 rounded border font-medium"
+                  style={{ borderColor: '#17a6b1', color: '#17a6b1' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+  );
+};
+
 // Artist View Page Component
 const ArtistViewPage = ({ artist, onBack, onArtistUpdate }) => {
   const [tracks, setTracks] = useState([]);
+  const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(artist.name);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [showAddTrackForm, setShowAddTrackForm] = useState(false);
 
   useEffect(() => {
-    const loadTracks = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const trackData = await fetchArtistTracks(artist.id);
+        const [trackData, genreData] = await Promise.all([
+          fetchArtistTracks(artist.id),
+          fetchGenres()
+        ]);
         setTracks(trackData);
+        setGenres(genreData);
       } catch (err) {
-        setError('Failed to load tracks.');
-        console.error('Error loading tracks:', err);
+        setError('Failed to load data.');
+        console.error('Error loading data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadTracks();
+    loadData();
   }, [artist.id]);
 
   const handleSave = async () => {
@@ -258,6 +471,16 @@ const ArtistViewPage = ({ artist, onBack, onArtistUpdate }) => {
     setEditedName(artist.name);
     setIsEditing(false);
     setSaveError(null);
+  };
+
+  const handleTrackAdded = async () => {
+    // Refresh tracks list
+    try {
+      const trackData = await fetchArtistTracks(artist.id);
+      setTracks(trackData);
+    } catch (err) {
+      console.error('Error refreshing tracks:', err);
+    }
   };
 
   return (
@@ -295,7 +518,7 @@ const ArtistViewPage = ({ artist, onBack, onArtistUpdate }) => {
             >
               <User className="h-12 w-12 text-white" />
             </div>
-            <div className="ml-6 flex-1">
+            <div className="ml-6">
               <div className="flex items-center mb-2">
                 {isEditing ? (
                     <div className="flex items-center gap-2 flex-1">
@@ -339,7 +562,7 @@ const ArtistViewPage = ({ artist, onBack, onArtistUpdate }) => {
               )}
               <div className="flex items-center text-blue-100 mb-3">
                 <Music className="h-5 w-5 mr-2" />
-                {artist.trackCount || 0} tracks
+                {tracks.length} tracks
               </div>
               <p className="text-blue-100 max-w-2xl">
                 {artist.description || 'No description available'}
@@ -350,8 +573,16 @@ const ArtistViewPage = ({ artist, onBack, onArtistUpdate }) => {
 
         {/* Tracks Section */}
         <div className="rounded-lg shadow-md overflow-hidden" style={{ backgroundColor: '#fdfdfd' }}>
-          <div className="px-6 py-4 border-b" style={{ backgroundColor: '#17a6b1', borderColor: '#00699e' }}>
+          <div className="px-6 py-4 border-b flex justify-between items-center" style={{ backgroundColor: '#17a6b1', borderColor: '#00699e' }}>
             <h2 className="text-xl font-semibold" style={{ color: '#fdfdfd' }}>Tracks</h2>
+            <button
+                onClick={() => setShowAddTrackForm(true)}
+                className="flex items-center gap-2 px-3 py-1 rounded bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors"
+                disabled={loading}
+            >
+              <Plus className="h-4 w-4" style={{ color: '#fdfdfd' }} />
+              <span className="text-sm" style={{ color: '#fdfdfd' }}>Add Track</span>
+            </button>
           </div>
 
           {loading ? (
@@ -365,6 +596,13 @@ const ArtistViewPage = ({ artist, onBack, onArtistUpdate }) => {
           ) : tracks.length === 0 ? (
               <div className="px-6 py-8 text-center" style={{ color: '#0d0d0d' }}>
                 No tracks available for this artist.
+                <button
+                    onClick={() => setShowAddTrackForm(true)}
+                    className="ml-2 text-sm underline"
+                    style={{ color: '#17a6b1' }}
+                >
+                  Add the first track
+                </button>
               </div>
           ) : (
               <table className="w-full">
@@ -398,6 +636,16 @@ const ArtistViewPage = ({ artist, onBack, onArtistUpdate }) => {
               </table>
           )}
         </div>
+
+        {/* Add Track Form Modal */}
+        {showAddTrackForm && (
+            <AddTrackForm
+                artist={artist}
+                genres={genres}
+                onClose={() => setShowAddTrackForm(false)}
+                onTrackAdded={handleTrackAdded}
+            />
+        )}
       </div>
   );
 };

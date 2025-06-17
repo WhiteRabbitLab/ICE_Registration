@@ -80,3 +80,11 @@ layer logic to include the new mapping in the DTO response
 
 - Selenium / Cucumber / Gherkin BDD scenarios for UX.
 - Integration tests using testcontainers for the REST API.
+
+### For security and access control
+
+- Spring Security filter chain on API
+- Security claim checks on specific endpoints or REST actions on filter chain (e.g. for admin / view only access)
+- Keycloak container to work as an Identity Provider
+- Setup a "user" account and an "admin" account
+- Simple login page
